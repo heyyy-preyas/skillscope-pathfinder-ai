@@ -1,94 +1,103 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Compass, User, BookOpen, Users } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
-  const navItems = [
-    { name: "Explore Careers", href: "#explore", icon: Compass },
-    { name: "Learn", href: "#learn", icon: BookOpen },
-    { name: "Connect", href: "#connect", icon: Users },
-  ];
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
+    <nav className="bg-white/90 backdrop-blur-sm border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Compass className="w-5 h-5 text-white" />
+          <div className="flex items-center">
+            <Link to="/" className="text-2xl font-bold gradient-text">SkillScope</Link>
+          </div>
+          
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-4">
+              <Link to="/" className="nav-link">Home</Link>
+              <Link to="/careers" className="nav-link">Careers</Link>
+              <Link to="/quiz" className="nav-link">Assessment</Link>
+              {user && <Link to="/dashboard" className="nav-link">Dashboard</Link>}
+              
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="ml-4">
+                      <User className="h-4 w-4 mr-2" />
+                      Profile
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="flex items-center space-x-2 ml-4">
+                  <Button variant="outline" onClick={() => navigate("/auth")}>Sign In</Button>
+                  <Button variant="hero" onClick={() => navigate("/auth")}>Get Started</Button>
+                </div>
+              )}
             </div>
-            <span className="text-xl font-bold text-foreground">SkillScope</span>
           </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="flex items-center space-x-2 text-muted-foreground hover:text-primary transition-colors duration-200"
-              >
-                <item.icon className="w-4 h-4" />
-                <span className="font-medium">{item.name}</span>
-              </a>
-            ))}
-          </div>
-
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <User className="w-4 h-4 mr-2" />
-              Sign In
-            </Button>
-            <Button variant="hero" size="sm">
-              Get Started
+          
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            {isMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
-            ) : (
-              <Menu className="w-6 h-6 text-foreground" />
-            )}
-          </button>
         </div>
+      </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border animate-fade-in">
-            <div className="space-y-4">
-              {navItems.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="flex items-center space-x-3 px-2 py-2 rounded-lg hover:bg-secondary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <item.icon className="w-5 h-5 text-primary" />
-                  <span className="font-medium text-foreground">{item.name}</span>
-                </a>
-              ))}
-              <div className="pt-4 space-y-2">
-                <Button variant="ghost" size="sm" className="w-full justify-start">
-                  <User className="w-4 h-4 mr-2" />
-                  Sign In
+      {isOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-b">
+            <Link to="/" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Home</Link>
+            <Link to="/careers" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Careers</Link>
+            <Link to="/quiz" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Assessment</Link>
+            {user && <Link to="/dashboard" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Dashboard</Link>}
+            <div className="pt-2 space-y-2">
+              {user ? (
+                <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                  Sign Out
                 </Button>
-                <Button variant="hero" size="sm" className="w-full">
-                  Get Started
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button>
+                  <Button variant="hero" className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
+                </>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </nav>
   );
 };
