@@ -1,72 +1,99 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { Navigation } from "@/components/Navigation";
-import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, TrendingUp, Target, BookOpen, Users } from "lucide-react";
+import { 
+  Target, 
+  TrendingUp, 
+  BookOpen, 
+  User, 
+  ArrowRight, 
+  Briefcase,
+  Award,
+  Calendar,
+  CheckCircle2
+} from "lucide-react";
+import CourseRecommendations from "@/components/CourseRecommendations";
+import RegionalJobInsights from "@/components/RegionalJobInsights";
 
 interface Profile {
-  full_name: string;
+  full_name: string | null;
   onboarding_completed: boolean;
-  goals?: string[];
 }
 
 interface CareerMatch {
-  career_path: {
+  id: string;
+  match_score: number;
+  career_paths: {
     title: string;
+    description: string;
     category: string;
     average_salary_min: number;
     average_salary_max: number;
+    growth_outlook: string;
   };
-  match_score: number;
 }
 
 const Dashboard = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [careerMatches, setCareerMatches] = useState<CareerMatch[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!user) {
       navigate("/auth");
+      return;
     }
-  }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user]);
+    fetchDashboardData();
+  }, [user, navigate]);
 
   const fetchDashboardData = async () => {
+    if (!user) return;
+
     try {
-      // Fetch user profile
+      // Fetch profile
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("*")
-        .eq("user_id", user?.id)
+        .select("full_name, onboarding_completed")
+        .eq("user_id", user.id)
         .single();
 
-      setProfile(profileData);
+      if (profileData) {
+        setProfile(profileData);
+      }
 
       // Fetch career matches
       const { data: matchesData } = await supabase
         .from("user_career_matches")
         .select(`
+          id,
           match_score,
-          career_path:career_paths(title, category, average_salary_min, average_salary_max)
+          career_paths (
+            title,
+            description,
+            category,
+            average_salary_min,
+            average_salary_max,
+            growth_outlook
+          )
         `)
-        .eq("user_id", user?.id)
+        .eq("user_id", user.id)
         .order("match_score", { ascending: false })
         .limit(3);
 
-      setCareerMatches(matchesData || []);
+      if (matchesData) {
+        setCareerMatches(matchesData as CareerMatch[]);
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -74,180 +101,233 @@ const Dashboard = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-light/20">
         <Navigation />
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="container mx-auto px-4 py-20">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-pulse text-xl text-muted-foreground">Loading your dashboard...</div>
+          </div>
         </div>
       </div>
     );
   }
 
+  const profileCompletion = profile?.onboarding_completed ? 100 : 30;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-light/20">
       <Navigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold gradient-text mb-2">
-            Welcome back, {profile?.full_name || "there"}!
-          </h1>
-          <p className="text-muted-foreground">
-            Track your progress and discover new opportunities
-          </p>
+      
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        {/* Welcome Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="glass-card rounded-3xl p-8 relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-hero opacity-5" />
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold mb-2">
+              Welcome back, {profile?.full_name || "there"}! 👋
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Continue your journey to finding the perfect career path
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+          >
+            <Card className="glass-card hover:shadow-primary transition-all duration-300 border-0">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Profile Completion</CardTitle>
+                <User className="w-4 h-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold mb-2">{profileCompletion}%</div>
+                <Progress value={profileCompletion} className="h-2 mb-2" />
+                <p className="text-xs text-muted-foreground">
+                  {profile?.onboarding_completed ? "Profile complete!" : "Complete your profile to unlock more features"}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <Card className="glass-card hover:shadow-accent transition-all duration-300 border-0">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Career Matches</CardTitle>
+                <Target className="w-4 h-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold mb-2">{careerMatches.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {careerMatches.length > 0 ? "Top career paths for you" : "Take the assessment to get matches"}
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <Card className="glass-card hover:shadow-glow transition-all duration-300 border-0">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Learning Progress</CardTitle>
+                <BookOpen className="w-4 h-4 text-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold mb-2">0</div>
+                <p className="text-xs text-muted-foreground">Courses in progress</p>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
-        {!profile?.onboarding_completed && (
-          <Card className="mb-8 border-accent">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Complete Your Profile
-              </CardTitle>
-              <CardDescription>
-                Take our assessment to get personalized career recommendations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => navigate("/quiz")} variant="hero">
-                Start Assessment
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profile Completion</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {profile?.onboarding_completed ? "100%" : "25%"}
-              </div>
-              <Progress 
-                value={profile?.onboarding_completed ? 100 : 25} 
-                className="mt-2"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Career Matches</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{careerMatches.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Personalized recommendations
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Learning Progress</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">
-                Courses completed
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
+        {/* Career Matches Section */}
         {careerMatches.length > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Your Top Career Matches</CardTitle>
-              <CardDescription>
-                Based on your assessment results
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {careerMatches.map((match, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{match.career_path.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        ${match.career_path.average_salary_min?.toLocaleString()} - 
-                        ${match.career_path.average_salary_max?.toLocaleString()}
-                      </p>
-                      <Badge variant="secondary" className="mt-2">
-                        {match.career_path.category}
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-accent">
-                        {Math.round(match.match_score * 100)}%
-                      </div>
-                      <p className="text-xs text-muted-foreground">Match</p>
-                    </div>
-                  </div>
-                ))}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="space-y-6"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-2">
+                  <Award className="w-8 h-8 text-primary" />
+                  Your Top Career Matches
+                </h2>
+                <p className="text-muted-foreground mt-1">
+                  Based on your assessment results
+                </p>
               </div>
-              <Button 
-                className="w-full mt-4" 
-                variant="outline"
-                onClick={() => navigate("/careers")}
-              >
-                Explore All Careers
+              <Button variant="outline" onClick={() => navigate("/careers")} className="glass">
+                View All Careers
+                <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {careerMatches.map((match, index) => (
+                <motion.div
+                  key={match.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                >
+                  <Card className="glass-card h-full hover:shadow-primary transition-all duration-300 hover:-translate-y-1 cursor-pointer border-0"
+                    onClick={() => navigate(`/careers/${match.id}`)}>
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge className="bg-gradient-primary text-white border-0">
+                          {Math.round(match.match_score)}% Match
+                        </Badge>
+                        <Badge variant="outline" className="border-border/50">
+                          {match.career_paths.category}
+                        </Badge>
+                      </div>
+                      <CardTitle className="text-xl">{match.career_paths.title}</CardTitle>
+                      <CardDescription className="line-clamp-2 text-base">
+                        {match.career_paths.description}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Salary Range</span>
+                        <span className="font-semibold text-foreground">
+                          ${match.career_paths.average_salary_min?.toLocaleString()} - 
+                          ${match.career_paths.average_salary_max?.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Growth Outlook</span>
+                        <span className="font-semibold text-success">
+                          {match.career_paths.growth_outlook || "Positive"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+        {/* Regional Job Insights */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+        >
+          <RegionalJobInsights />
+        </motion.div>
+
+        {/* Course Recommendations */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7 }}
+        >
+          <CourseRecommendations />
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.8 }}
+          className="grid md:grid-cols-3 gap-6"
+        >
+          <Card className="glass-card hover:shadow-primary transition-all duration-300 cursor-pointer border-0"
+            onClick={() => navigate("/quiz")}>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CheckCircle2 className="w-10 h-10 text-primary mb-2" />
+              <CardTitle>Take Assessment</CardTitle>
+              <CardDescription>
+                Discover your ideal career paths with our AI-powered assessment
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => navigate("/quiz")}
-              >
-                <Target className="mr-2 h-4 w-4" />
-                Retake Assessment
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                onClick={() => navigate("/careers")}
-              >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Browse Careers
-              </Button>
-              <Button 
-                variant="outline" 
-                className="w-full justify-start"
-                disabled
-              >
-                <Users className="mr-2 h-4 w-4" />
-                Find Mentors (Coming Soon)
-              </Button>
-            </CardContent>
           </Card>
 
-          <Card>
+          <Card className="glass-card hover:shadow-accent transition-all duration-300 cursor-pointer border-0"
+            onClick={() => navigate("/careers")}>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <Briefcase className="w-10 h-10 text-accent mb-2" />
+              <CardTitle>Browse Careers</CardTitle>
+              <CardDescription>
+                Explore hundreds of career paths and find your perfect match
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                No recent activity yet. Start exploring to see your progress here!
-              </p>
-            </CardContent>
           </Card>
-        </div>
+
+          <Card className="glass-card hover:shadow-glow transition-all duration-300 opacity-75 border-0">
+            <CardHeader>
+              <Calendar className="w-10 h-10 text-success mb-2" />
+              <CardTitle>Find a Mentor</CardTitle>
+              <CardDescription>
+                Connect with industry experts for guidance (Coming Soon)
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </motion.div>
       </div>
+
+      <Footer />
     </div>
   );
 };

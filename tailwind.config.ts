@@ -79,12 +79,14 @@ export default {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-accent': 'var(--gradient-accent)',
 				'gradient-hero': 'var(--gradient-hero)',
-				'gradient-card': 'var(--gradient-card)'
+				'gradient-card': 'var(--gradient-card)',
+				'gradient-glass': 'var(--gradient-glass)'
 			},
 			boxShadow: {
 				'soft': 'var(--shadow-soft)',
 				'medium': 'var(--shadow-medium)',
 				'large': 'var(--shadow-large)',
+				'glow': 'var(--shadow-glow)',
 				'primary': 'var(--shadow-primary)',
 				'accent': 'var(--shadow-accent)'
 			},

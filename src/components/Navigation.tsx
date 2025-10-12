@@ -22,7 +22,7 @@ export const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white/90 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <nav className="glass-card sticky top-0 z-50 border-x-0 rounded-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -30,11 +30,11 @@ export const Navigation = () => {
           </div>
           
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+            <div className="ml-10 flex items-baseline space-x-6">
               <Link to="/" className="nav-link">Home</Link>
+              <Link to="/dashboard" className="nav-link">Dashboard</Link>
               <Link to="/careers" className="nav-link">Careers</Link>
               <Link to="/quiz" className="nav-link">Assessment</Link>
-              {user && <Link to="/dashboard" className="nav-link">Dashboard</Link>}
               
               {user ? (
                 <DropdownMenu>
@@ -44,7 +44,7 @@ export const Navigation = () => {
                       Profile
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="glass-card">
                     <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                       Dashboard
                     </DropdownMenuItem>
@@ -57,8 +57,8 @@ export const Navigation = () => {
                 </DropdownMenu>
               ) : (
                 <div className="flex items-center space-x-2 ml-4">
-                  <Button variant="outline" onClick={() => navigate("/auth")}>Sign In</Button>
-                  <Button variant="hero" onClick={() => navigate("/auth")}>Get Started</Button>
+                  <Button variant="outline" onClick={() => navigate("/auth")} className="glass">Sign In</Button>
+                  <Button onClick={() => navigate("/auth")} className="shadow-glow hover:shadow-primary">Get Started</Button>
                 </div>
               )}
             </div>
@@ -78,20 +78,20 @@ export const Navigation = () => {
 
       {isOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-b">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 glass-card border-t border-x-0 rounded-none">
             <Link to="/" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Home</Link>
+            <Link to="/dashboard" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Dashboard</Link>
             <Link to="/careers" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Careers</Link>
             <Link to="/quiz" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Assessment</Link>
-            {user && <Link to="/dashboard" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Dashboard</Link>}
             <div className="pt-2 space-y-2">
               {user ? (
-                <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                <Button variant="outline" className="w-full glass" onClick={handleSignOut}>
                   Sign Out
                 </Button>
               ) : (
                 <>
-                  <Button variant="outline" className="w-full" onClick={() => navigate("/auth")}>Sign In</Button>
-                  <Button variant="hero" className="w-full" onClick={() => navigate("/auth")}>Get Started</Button>
+                  <Button variant="outline" className="w-full glass" onClick={() => navigate("/auth")}>Sign In</Button>
+                  <Button className="w-full shadow-glow" onClick={() => navigate("/auth")}>Get Started</Button>
                 </>
               )}
             </div>
