@@ -34,6 +34,8 @@ export const Navigation = () => {
               <Link to="/" className="nav-link">Home</Link>
               <Link to="/dashboard" className="nav-link">Dashboard</Link>
               <Link to="/careers" className="nav-link">Careers</Link>
+              <Link to="/jobs" className="nav-link">Jobs</Link>
+              <Link to="/mentors" className="nav-link">Mentors</Link>
               <Link to="/quiz" className="nav-link">Assessment</Link>
               
               {user ? (
@@ -82,6 +84,8 @@ export const Navigation = () => {
             <Link to="/" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Home</Link>
             <Link to="/dashboard" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Dashboard</Link>
             <Link to="/careers" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Careers</Link>
+            <Link to="/jobs" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Jobs</Link>
+            <Link to="/mentors" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Mentors</Link>
             <Link to="/quiz" className="block px-3 py-2 nav-link" onClick={() => setIsOpen(false)}>Assessment</Link>
             <div className="pt-2 space-y-2">
               {user ? (

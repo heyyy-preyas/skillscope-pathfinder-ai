@@ -417,12 +417,13 @@ const Dashboard = () => {
             </CardHeader>
           </Card>
 
-          <Card className="glass-card hover:shadow-glow transition-all duration-300 opacity-75 border-0">
+          <Card className="glass-card hover:shadow-glow transition-all duration-300 cursor-pointer border-0"
+            onClick={() => navigate("/mentors")}>
             <CardHeader>
               <Calendar className="w-10 h-10 text-success mb-2" />
               <CardTitle>Find a Mentor</CardTitle>
               <CardDescription>
-                Connect with industry experts for guidance (Coming Soon)
+                Connect with industry experts for personalized guidance
               </CardDescription>
             </CardHeader>
           </Card>
