@@ -13,6 +13,12 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OPENAI_API_KEY is not configured');
@@ -22,7 +28,26 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { answers, userId } = await req.json();
+    // Verify JWT and extract user ID from token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      throw new Error('Unauthorized');
+    }
+    const userId = user.id;
+
+    const { answers } = await req.json();
+
+    // Validate and sanitize quiz answers
+    const sanitizeAnswer = (answer: string): string => {
+      if (typeof answer !== 'string') return '';
+      // Limit length and remove potentially dangerous characters
+      return answer.slice(0, 500).replace(/[<>"']/g, '');
+    };
+
+    if (!answers || typeof answers !== 'object') {
+      throw new Error('Invalid answers format');
+    }
 
     // Fetch career paths from database
     const { data: careerPaths, error: careerError } = await supabase
@@ -31,11 +56,15 @@ serve(async (req) => {
 
     if (careerError) throw careerError;
 
-    // Build prompt for OpenAI
+    // Build prompt for OpenAI with sanitized answers
+    const sanitizedAnswers = Object.entries(answers)
+      .map(([questionId, answer]) => `Q${questionId}: ${sanitizeAnswer(answer)}`)
+      .join('\n');
+
     const prompt = `You are a career counselor analyzing quiz responses to recommend careers. 
 
 User's Quiz Answers:
-${Object.entries(answers).map(([questionId, answer]) => `Q${questionId}: ${answer}`).join('\n')}
+${sanitizedAnswers}
 
 Available Career Paths:
 ${careerPaths?.map((career, index) => 

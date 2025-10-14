@@ -83,8 +83,7 @@ const Quiz = () => {
         'generate-career-recommendations',
         {
           body: {
-            answers: answers,
-            userId: user.id
+            answers: answers
           }
         }
       );
