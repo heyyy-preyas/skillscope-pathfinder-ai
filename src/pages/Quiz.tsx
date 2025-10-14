@@ -76,38 +76,25 @@ const Quiz = () => {
   };
 
   const generateCareerMatches = async () => {
-    // Simple matching algorithm based on answers
-    const { data: careerPaths } = await supabase
-      .from("career_paths")
-      .select("*");
+    if (!user) return { success: false };
 
-    if (!careerPaths || !user) return;
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'generate-career-recommendations',
+        {
+          body: {
+            answers: answers,
+            userId: user.id
+          }
+        }
+      );
 
-    // Calculate matches based on answers (simplified algorithm)
-    const matches = careerPaths.map(career => {
-      let score = Math.random() * 0.4 + 0.6; // Random score between 0.6-1.0 for demo
-      
-      // Adjust score based on answers
-      if (answers[Object.keys(answers)[0]] === "solving_problems" && career.category === "technology") {
-        score = Math.min(1.0, score + 0.2);
-      }
-      if (answers[Object.keys(answers)[0]] === "creating_art" && career.category === "arts") {
-        score = Math.min(1.0, score + 0.2);
-      }
+      if (error) throw error;
 
-      return {
-        user_id: user.id,
-        career_path_id: career.id,
-        match_score: Math.round(score * 100) / 100,
-        reasoning: `Based on your quiz responses, this career aligns well with your interests and skills.`
-      };
-    });
-
-    // Insert matches (handle conflicts)
-    for (const match of matches) {
-      await supabase
-        .from("user_career_matches")
-        .upsert(match, { onConflict: "user_id,career_path_id" });
+      return data;
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+      return { success: false };
     }
   };
 
@@ -120,13 +107,25 @@ const Quiz = () => {
     setSubmitting(true);
 
     try {
-      // Save quiz results
+      // Generate AI career matches first
+      toast({
+        title: "Analyzing your responses...",
+        description: "Our AI is generating personalized career recommendations for you.",
+      });
+
+      const result = await generateCareerMatches();
+
+      if (!result?.success) {
+        throw new Error('Failed to generate recommendations');
+      }
+
+      // Save quiz results with AI recommendations
       const quizResult = {
         user_id: user.id,
         quiz_type: "interests" as const,
         answers: answers,
         scores: {},
-        recommendations: []
+        recommendations: result.recommendations || []
       };
 
       const { error } = await supabase
@@ -135,9 +134,6 @@ const Quiz = () => {
 
       if (error) throw error;
 
-      // Generate career matches
-      await generateCareerMatches();
-
       // Update profile as onboarding completed
       await supabase
         .from("profiles")
@@ -145,8 +141,8 @@ const Quiz = () => {
         .eq("user_id", user.id);
 
       toast({
-        title: "Assessment Complete!",
-        description: "Your career recommendations are ready.",
+        title: "Assessment Complete! 🎉",
+        description: "Your personalized career recommendations are ready.",
       });
 
       navigate("/dashboard");
@@ -154,7 +150,7 @@ const Quiz = () => {
       console.error("Error submitting quiz:", error);
       toast({
         title: "Error",
-        description: "Failed to submit assessment",
+        description: "Failed to generate recommendations. Please try again.",
         variant: "destructive",
       });
     } finally {
