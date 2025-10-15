@@ -1,1 +1,6 @@
 project_id = "tmktwsinbyoqxgmkqcjh"
+
+[functions.fetch-jobs]
+verify_jwt = false
+
+[functions.generate-career-recommendations]
