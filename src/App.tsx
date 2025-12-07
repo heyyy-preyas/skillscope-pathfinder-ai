@@ -11,6 +11,7 @@ import Quiz from "./pages/Quiz";
 import Careers from "./pages/Careers";
 import CareerDetail from "./pages/CareerDetail";
 import Jobs from "./pages/Jobs";
+import Roadmap from "./pages/Roadmap";
 import Mentors from "./pages/Mentors";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/jobs" element={<Jobs />} />
             <Route path="/mentors" element={<Mentors />} />
             <Route path="/chat/:mentorId" element={<Chat />} />
+            <Route path="/roadmap/:goal" element={<Roadmap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -41,4 +41,5 @@ export const api = {
     // Mentors
     getAllMentors: () => apiClient.get('/mentors'),
     getMentorProfile: (id: string) => apiClient.get(`/mentors/${id}`),
+    bookSession: (data: { mentorId: string, timeSlot: string }) => apiClient.post('/mentors/book', data),
 };

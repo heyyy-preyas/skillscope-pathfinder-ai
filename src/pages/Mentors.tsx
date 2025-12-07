@@ -76,7 +76,7 @@ const Mentors = () => {
     }
   };
 
-  const handleBookCall = (mentorId: string) => {
+  const handleBookCall = async (mentorId: string) => {
     if (!user) {
       toast({
         title: "Sign in required",
@@ -87,10 +87,31 @@ const Mentors = () => {
       return;
     }
 
-    toast({
-      title: "Booking system coming soon!",
-      description: "This feature will be available shortly",
-    });
+    try {
+      toast({
+        title: "Scheduling...",
+        description: "Finding next available slot...",
+      });
+
+      // Mock selecting a time
+      const timeSlot = "Tomorrow, 10:00 AM";
+
+      const { data } = await api.bookSession({ mentorId, timeSlot });
+
+      if (data.success) {
+        toast({
+          title: "Booking Confirmed! ✅",
+          description: `Session scheduled for ${timeSlot}. Check your email for the link.`,
+          className: "bg-green-500 text-white border-0"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Booking Failed",
+        description: "Could not schedule session. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleStartChat = (mentorId: string) => {

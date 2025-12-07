@@ -28,37 +28,40 @@ exports.getRoadmap = async (req, res) => {
     }
 };
 
+const aiService = require('../services/aiService');
+
 exports.generateRoadmap = async (req, res) => {
     const supabase = getSupabaseClient(req);
     const userId = req.user.id;
     const { career_goal } = req.body;
 
-    // Mock Roadmap Generation logic
-    // Real implementation: Call Flask or complex logic
-    const newRoadmap = {
-        user_id: userId,
-        career_goal,
-        steps: [
-            { id: 1, title: 'Learn Basics', status: 'pending' },
-            { id: 2, title: 'Build Project', status: 'pending' },
-            { id: 3, title: 'Apply for Jobs', status: 'pending' }
-        ]
-    };
+    if (!career_goal) {
+        return res.status(400).json({ error: 'Career goal is required' });
+    }
 
     try {
+        // 1. Generate Roadmap (AI or Mock)
+        const roadMapData = await aiService.generateRoadmap(career_goal);
+
+        const newRoadmap = {
+            user_id: userId,
+            career_goal: roadMapData.career,
+            steps: roadMapData.milestones, // Store the detailed array
+            status: 'active',
+            created_at: new Date().toISOString()
+        };
+
+        // 2. Save to Database
         const { data, error } = await supabase
             .from('roadmaps')
-            .upsert(newRoadmap) // upsert based on user_id if we want 1 roadmap per user? Or just insert.
-            // IDs are UUIDs. If we want one active roadmap, we'd need to handle that.
-            // For now, let's just insert.
-            .insert(newRoadmap)
+            .upsert(newRoadmap)
             .select()
             .single();
 
         if (error) throw error;
         res.json(data);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Roadmap Geneation Error:', err);
+        res.status(500).json({ error: 'Failed to generate roadmap' });
     }
 };

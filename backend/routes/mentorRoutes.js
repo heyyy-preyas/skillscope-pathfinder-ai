@@ -5,5 +5,6 @@ const requireAuth = require('../middleware/authMiddleware');
 
 router.get('/', requireAuth, mentorController.getAllMentors);
 router.get('/:id', requireAuth, mentorController.getMentorProfile);
+router.post('/book', mentorController.bookSession);
 
 module.exports = router;

@@ -43,3 +43,21 @@ exports.getMentorProfile = async (req, res) => {
         res.status(500).json({ error: 'Server error check id' });
     }
 };
+
+
+exports.bookSession = async (req, res) => {
+    // Mock booking logic
+    const { mentorId, timeSlot } = req.body;
+    // In real app: check availability, create calendar event, send email
+
+    console.log(`Booking session with mentor ${mentorId} at ${timeSlot}`);
+
+    // Simulate success
+    setTimeout(() => {
+        res.json({
+            success: true,
+            message: 'Session booked successfully!',
+            details: { mentorId, timeSlot, link: 'https://meet.google.com/abc-defg-hij' }
+        });
+    }, 1000);
+};
