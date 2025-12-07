@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  Target, 
-  TrendingUp, 
-  BookOpen, 
-  User, 
-  ArrowRight, 
+import { api } from "@/services/api";
+import {
+  Target,
+  TrendingUp,
+  BookOpen,
+  User,
+  ArrowRight,
   Briefcase,
   Award,
   Calendar,
@@ -71,56 +71,42 @@ const Dashboard = () => {
     if (!user) return;
 
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, onboarding_completed")
-        .eq("user_id", user.id)
-        .single();
-
+      // Fetch profile via Node API
+      const { data: profileData } = await api.getProfile();
       if (profileData) {
         setProfile(profileData);
       }
 
-      // Fetch career matches with reasoning
-      const { data: matchesData } = await supabase
-        .from("user_career_matches")
-        .select(`
-          id,
-          match_score,
-          reasoning,
-          career_paths (
-            id,
-            title,
-            description,
-            category,
-            average_salary_min,
-            average_salary_max,
-            growth_outlook
-          )
-        `)
-        .eq("user_id", user.id)
-        .order("match_score", { ascending: false })
-        .limit(3);
+      // Fetch history/predictions via Node API
+      const { data: historyData } = await api.getHistory();
 
-      if (matchesData) {
-        setCareerMatches(matchesData as CareerMatch[]);
-      }
+      if (historyData && Array.isArray(historyData) && historyData.length > 0) {
+        // Map backend prediction format to Dashboard UI format
+        const latestPrediction = historyData[0]; // Most recent
+        const mappedRecommendation: QuizRecommendation = {
+          careerTitle: latestPrediction.predicted_career || "Unknown",
+          matchScore: Math.round(latestPrediction.confidence_score * 100) || 0,
+          reasoning: "Based on your assessment answers.", // Backend doesn't return reasoning yet
+          roadmap: ["Learn Basics", "Build Portfolio", "Apply for Jobs"] // Mock roadmap if not present
+        };
 
-      // Fetch latest quiz results with AI recommendations
-      const { data: quizData } = await supabase
-        .from("quiz_results")
-        .select("recommendations")
-        .eq("user_id", user.id)
-        .order("completed_at", { ascending: false })
-        .limit(1)
-        .single();
+        setRecommendations([mappedRecommendation]);
 
-      if (quizData?.recommendations && Array.isArray(quizData.recommendations)) {
-        const recs = quizData.recommendations as any[];
-        if (recs.length > 0 && typeof recs[0] === 'object' && 'careerTitle' in recs[0]) {
-          setRecommendations(recs as QuizRecommendation[]);
-        }
+        // Also map to "Career Matches" for the stats cards
+        setCareerMatches([{
+          id: latestPrediction.id,
+          match_score: latestPrediction.confidence_score * 100,
+          reasoning: "AI Prediction",
+          career_paths: {
+            id: 'mock-id',
+            title: latestPrediction.predicted_career,
+            description: "AI Recommended Career",
+            category: "Technology", // Mock
+            average_salary_min: 50000,
+            average_salary_max: 120000,
+            growth_outlook: "High"
+          }
+        }]);
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -147,7 +133,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-light/20">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Welcome Section */}
         <motion.div
@@ -252,10 +238,10 @@ const Dashboard = () => {
 
             <div className="grid lg:grid-cols-1 gap-6">
               {recommendations.map((rec, index) => {
-                const match = careerMatches.find(m => 
+                const match = careerMatches.find(m =>
                   m.career_paths.title.toLowerCase() === rec.careerTitle.toLowerCase()
                 );
-                
+
                 return (
                   <motion.div
                     key={index}
@@ -300,7 +286,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Salary Range</span>
                               <span className="font-semibold text-foreground">
-                                ${match.career_paths.average_salary_min?.toLocaleString()} - 
+                                ${match.career_paths.average_salary_min?.toLocaleString()} -
                                 ${match.career_paths.average_salary_max?.toLocaleString()}
                               </span>
                             </div>
@@ -312,7 +298,7 @@ const Dashboard = () => {
                             </div>
                           </div>
                         )}
-                        
+
                         <div>
                           <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
                             <TrendingUp className="w-5 h-5 text-primary" />
@@ -320,7 +306,7 @@ const Dashboard = () => {
                           </h4>
                           <div className="space-y-3">
                             {rec.roadmap.map((step, stepIndex) => (
-                              <div 
+                              <div
                                 key={stepIndex}
                                 className="flex gap-3 items-start p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-colors"
                               >
@@ -357,8 +343,8 @@ const Dashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
-                  onClick={() => navigate("/quiz")} 
+                <Button
+                  onClick={() => navigate("/quiz")}
                   size="lg"
                   className="shadow-glow hover:shadow-primary"
                 >

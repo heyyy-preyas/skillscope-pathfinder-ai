@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  ArrowLeft, 
-  DollarSign, 
-  TrendingUp, 
-  MapPin, 
-  Clock, 
+import { api } from "@/services/api";
+import {
+  ArrowLeft,
+  DollarSign,
+  TrendingUp,
+  MapPin,
+  Clock,
   CheckCircle,
   ExternalLink,
   Target
@@ -45,14 +45,8 @@ const CareerDetail = () => {
 
   const fetchCareerDetail = async () => {
     try {
-      const { data, error } = await supabase
-        .from("career_paths")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
-
+      if (!id) return;
+      const { data } = await api.getCareerDetail(id);
       setCareer(data);
     } catch (error) {
       console.error("Error fetching career detail:", error);
@@ -101,8 +95,8 @@ const CareerDetail = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => navigate("/careers")}
           className="mb-6"
         >
@@ -131,7 +125,7 @@ const CareerDetail = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${career.average_salary_min?.toLocaleString()} - 
+                  ${career.average_salary_min?.toLocaleString()} -
                   ${career.average_salary_max?.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">

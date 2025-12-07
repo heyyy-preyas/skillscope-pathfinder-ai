@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/services/api";
 import { Search, MapPin, Briefcase, DollarSign, Clock, ExternalLink, Loader2 } from "lucide-react";
 
 interface Job {
@@ -41,25 +41,41 @@ const Jobs = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-jobs', {
-        body: { query: searchQuery, location }
-      });
+      // Use Node.js backend API
+      const { data } = await api.getTrendingJobs(searchQuery, location);
 
-      if (error) throw error;
+      if (data) {
+        // Backend returns raw format, need to map if necessary or enforce type
+        // Current backend mock returns array of { title, company, location, salary, ... }
+        // The UI expects detailed Job interface (requirements, PostedDate etc.)
+        // We'll map the backend response to the UI state
+        const mappedJobs: Job[] = data.map((j: any) => ({
+          id: j.id || Math.random().toString(),
+          title: j.title,
+          company: j.company,
+          location: j.location,
+          type: 'Full-time', // Mock default
+          salary: j.salary || 'Competitive',
+          description: j.description || 'No description available',
+          requirements: ['Experience with React', 'Node.js knowledge'], // Mock
+          postedDate: new Date().toISOString(),
+          applicationUrl: '#'
+        }));
 
-      setJobs(data.jobs || []);
-      
-      if (data.jobs?.length === 0) {
-        toast({
-          title: "No jobs found",
-          description: "Try adjusting your search criteria",
-        });
+        setJobs(mappedJobs);
+
+        if (mappedJobs.length === 0) {
+          toast({
+            title: "No jobs found",
+            description: "Try adjusting your search criteria",
+          });
+        }
       }
     } catch (error: any) {
       console.error("Error fetching jobs:", error);
       toast({
         title: "Error fetching jobs",
-        description: error.message,
+        description: error.message || "Failed to connect to server",
         variant: "destructive",
       });
     } finally {
@@ -71,7 +87,7 @@ const Jobs = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffInDays === 0) return "Today";
     if (diffInDays === 1) return "Yesterday";
     return `${diffInDays} days ago`;
@@ -80,7 +96,7 @@ const Jobs = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-light/20">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8 space-y-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -126,8 +142,8 @@ const Jobs = () => {
                     />
                   </div>
                 </div>
-                <Button 
-                  onClick={handleSearch} 
+                <Button
+                  onClick={handleSearch}
                   disabled={loading}
                   className="w-full shadow-glow hover:shadow-primary"
                 >

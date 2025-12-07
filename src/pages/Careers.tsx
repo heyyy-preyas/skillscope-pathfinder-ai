@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/services/api";
 import { Search, TrendingUp, DollarSign } from "lucide-react";
 
 interface CareerPath {
@@ -37,13 +37,7 @@ const Careers = () => {
 
   const fetchCareers = async () => {
     try {
-      const { data, error } = await supabase
-        .from("career_paths")
-        .select("*")
-        .order("title");
-
-      if (error) throw error;
-
+      const { data } = await api.getCareers();
       setCareers(data || []);
     } catch (error) {
       console.error("Error fetching careers:", error);
@@ -167,7 +161,7 @@ const Careers = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <DollarSign className="h-4 w-4 text-accent" />
                         <span>
-                          ${career.average_salary_min?.toLocaleString()} - 
+                          ${career.average_salary_min?.toLocaleString()} -
                           ${career.average_salary_max?.toLocaleString()}
                         </span>
                       </div>
@@ -212,8 +206,8 @@ const Careers = () => {
                   <p className="text-muted-foreground mb-4">
                     No careers found matching your criteria.
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setSearchTerm("");
                       setSelectedCategory("all");

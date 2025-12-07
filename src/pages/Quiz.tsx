@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -35,13 +35,8 @@ const Quiz = () => {
 
   const fetchQuestions = async () => {
     try {
-      const { data, error } = await supabase
-        .from("quiz_questions")
-        .select("*")
-        .order("quiz_type", { ascending: true });
-
-      if (error) throw error;
-
+      // Use Node API to fetch questions
+      const { data } = await api.getQuestions();
       setQuestions(data || []);
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -75,28 +70,6 @@ const Quiz = () => {
     }
   };
 
-  const generateCareerMatches = async () => {
-    if (!user) return { success: false };
-
-    try {
-      const { data, error } = await supabase.functions.invoke(
-        'generate-career-recommendations',
-        {
-          body: {
-            answers: answers
-          }
-        }
-      );
-
-      if (error) throw error;
-
-      return data;
-    } catch (error) {
-      console.error('Error generating recommendations:', error);
-      return { success: false };
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       navigate("/auth");
@@ -106,38 +79,16 @@ const Quiz = () => {
     setSubmitting(true);
 
     try {
-      // Generate AI career matches first
       toast({
         title: "Analyzing your responses...",
         description: "Our AI is generating personalized career recommendations for you.",
       });
 
-      const result = await generateCareerMatches();
+      // Submit to Backend (which calls AI service and saves result)
+      await api.submitAssessment(answers);
 
-      if (!result?.success) {
-        throw new Error('Failed to generate recommendations');
-      }
-
-      // Save quiz results with AI recommendations
-      const quizResult = {
-        user_id: user.id,
-        quiz_type: "interests" as const,
-        answers: answers,
-        scores: {},
-        recommendations: result.recommendations || []
-      };
-
-      const { error } = await supabase
-        .from("quiz_results")
-        .insert(quizResult);
-
-      if (error) throw error;
-
-      // Update profile as onboarding completed
-      await supabase
-        .from("profiles")
-        .update({ onboarding_completed: true })
-        .eq("user_id", user.id);
+      // Update profile status
+      await api.updateProfile({ onboarding_completed: true });
 
       toast({
         title: "Assessment Complete! 🎉",
@@ -221,8 +172,8 @@ const Quiz = () => {
               {currentQuestion.options.options.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <RadioGroupItem value={option.value} id={option.value} />
-                  <Label 
-                    htmlFor={option.value} 
+                  <Label
+                    htmlFor={option.value}
                     className="flex-1 cursor-pointer"
                   >
                     {option.text}

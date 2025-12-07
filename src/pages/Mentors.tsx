@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/services/api";
 import { Star, MessageCircle, Calendar, Briefcase, Loader2 } from "lucide-react";
 
 interface Mentor {
@@ -41,39 +41,34 @@ const Mentors = () => {
 
   const fetchMentors = async () => {
     try {
-      const { data: mentorsData, error } = await supabase
-        .from("mentors")
-        .select("*")
-        .order("rating", { ascending: false });
-
-      if (error) throw error;
+      const { data: mentorsData } = await api.getAllMentors();
 
       if (mentorsData) {
-        const mentorsWithProfiles = await Promise.all(
-          mentorsData.map(async (mentor) => {
-            const { data: profileData } = await supabase
-              .from("profiles")
-              .select("full_name, avatar_url")
-              .eq("user_id", mentor.user_id)
-              .single();
+        // Backend already joins profiles: { data: [ { ..., profiles: { full_name, avatar_url } } ] }
+        // We just need to ensure the type matches or map it if necessary.
+        // The Mentor interface in this file expects: profiles: { full_name, avatar_url }
+        // The backend returns exactly that structure via Supabase join.
+        // However, we need to handle if 'profiles' is an array or object. Supabase .single() in logic? 
+        // In controller: .select('*, profiles(...)') returns profiles as object if 1:1, but usually array if 1:many.
+        // FK is on mentors.profile_id -> profiles.id. So one mentor has one profile.
+        // Supabase returns object if we configure it right, but let's map safely.
 
-            return {
-              ...mentor,
-              profiles: {
-                full_name: profileData?.full_name || "Anonymous",
-                avatar_url: profileData?.avatar_url || ""
-              }
-            };
-          })
-        );
+        const mappedMentors = mentorsData.map((m: any) => ({
+          ...m,
+          expertise_areas: m.expertise || m.expertise_areas || [], // Handle potential naming diff
+          experience_years: m.years_of_experience || m.experience_years,
+          total_sessions: m.total_sessions || 0,
+          rating: m.rating || 5.0,
+          profiles: Array.isArray(m.profiles) ? m.profiles[0] : m.profiles || { full_name: 'Unknown', avatar_url: '' }
+        }));
 
-        setMentors(mentorsWithProfiles as Mentor[]);
+        setMentors(mappedMentors);
       }
     } catch (error: any) {
       console.error("Error fetching mentors:", error);
       toast({
         title: "Error loading mentors",
-        description: error.message,
+        description: error.message || "Failed to connect to server",
         variant: "destructive",
       });
     } finally {
@@ -128,7 +123,7 @@ const Mentors = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary-light/20">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8 space-y-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
