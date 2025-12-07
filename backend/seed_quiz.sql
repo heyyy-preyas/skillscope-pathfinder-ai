@@ -1,16 +1,3 @@
--- Add quiz_questions table
-CREATE TABLE IF NOT EXISTS public.quiz_questions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  quiz_type TEXT DEFAULT 'riasec', -- 'riasec', 'skill', etc.
-  question TEXT NOT NULL,
-  options JSONB, -- { "options": [ { "text": "Strongly Agree", "value": "5" }, ... ] }
-  category TEXT, -- 'R', 'I', 'A', 'S', 'E', 'C'
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
-ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Quiz questions are viewable by everyone." ON public.quiz_questions FOR SELECT USING (true);
-
 -- Seed RIASEC Questions (Realistic, Investigative, Artistic, Social, Enterprising, Conventional)
 INSERT INTO public.quiz_questions (question, category, options) VALUES
 -- Realistic (Doers)
